@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # SQLite database URL
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./moodmate.db")
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./moodakLyom.db")
 
 # Create engine
 engine = create_engine(
