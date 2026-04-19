@@ -51,7 +51,7 @@ with SessionLocal() as db:
 from app.routes import hack as hack_routes
 from app.routes import mood as mood_routes
 from app.routes import profile as profile_routes
-from app.routes import resource as resource_routes
+from app.routes import resources as resource_routes
 from app.routes import task as task_routes
 from app.routes import user as user_routes
 from app.routes import voice as voice_routes

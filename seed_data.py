@@ -64,7 +64,7 @@ def create_hack(token: str, title: str, content: str, category=None, tags=None):
 
 
 def main():
-    print("Seeding MoodMate sample data...")
+    print("Seeding MoodkLyom sample data...")
 
     users_data = [
         {
