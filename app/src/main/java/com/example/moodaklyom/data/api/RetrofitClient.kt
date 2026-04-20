@@ -12,7 +12,9 @@ object RetrofitClient {
     // Change this to your backend URL
     // For Android Emulator: http://10.0.2.2:8000
     // For physical device: http://YOUR_COMPUTER_IP:8000
-    private const val BASE_URL = "http://10.0.2.2:8000/"
+    //private const val BASE_URL = "http://10.0.2.2:8000/"
+    private const val BASE_URL = "http://192.168.10.29:8000/"
+
     //base url for phone emulator: http://192.168.10.29:8000/
 
     @Volatile

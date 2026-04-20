@@ -82,13 +82,25 @@ fun AddMoodScreen(navController: NavController) {
                     if (result.isSuccess) {
                         val response = result.getOrNull()
 
-                        // ✅ ONLY USE TEXT (correct backend field)
-                        if (response?.success == true && !response.text.isNullOrBlank()) {
+                        // ✅ USE transcribed_text (correct backend field)
+                        if (response?.success == true && !response.transcribed_text.isNullOrBlank()) {
 
-                            notes = response.text
+                            notes = response.transcribed_text
 
-                            // ❌ REMOVE emotion logic (not returned)
-                            detectedEmotionLabel = null
+                            // ✅ Update emotion logic
+                            detectedEmotionLabel = response.emotion?.primary_emotion
+
+                            // ✅ Suggest mood level based on emotion
+                            response.emotion?.primary_emotion?.lowercase()?.let { emotion ->
+                                selectedMood = when (emotion) {
+                                    "anger", "fear" -> 2
+                                    "sadness", "disgust" -> 3
+                                    "neutral" -> 5
+                                    "joy", "love" -> 8
+                                    "surprise" -> 9
+                                    else -> selectedMood
+                                }
+                            }
 
                             transcriptionError = null
 
@@ -203,13 +215,25 @@ fun AddMoodScreen(navController: NavController) {
                                                     if (result.isSuccess) {
                                                         val response = result.getOrNull()
 
-                                                        if (response?.success == true && !response.text.isNullOrBlank()) {
+                                                        if (response?.success == true && !response.transcribed_text.isNullOrBlank()) {
 
-                                                            // ✅ ONLY USE WHAT BACKEND RETURNS
-                                                            notes = response.text
+                                                            // ✅ Use transcribed_text
+                                                            notes = response.transcribed_text
 
-                                                            // ❌ REMOVE THESE (not supported now)
-                                                            detectedEmotionLabel = null
+                                                            // ✅ Update emotion logic
+                                                            detectedEmotionLabel = response.emotion?.primary_emotion
+
+                                                            // ✅ Suggest mood level based on emotion
+                                                            response.emotion?.primary_emotion?.lowercase()?.let { emotion ->
+                                                                selectedMood = when (emotion) {
+                                                                    "anger", "fear" -> 2
+                                                                    "sadness", "disgust" -> 3
+                                                                    "neutral" -> 5
+                                                                    "joy", "love" -> 8
+                                                                    "surprise" -> 9
+                                                                    else -> selectedMood
+                                                                }
+                                                            }
 
                                                             transcriptionError = null
 

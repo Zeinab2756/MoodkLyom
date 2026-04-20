@@ -9,6 +9,7 @@ import shutil
 import numpy as np
 import soundfile as sf
 
+# Ensure ffmpeg is in path for Windows
 os.environ["PATH"] += os.pathsep + r"C:\ffmpeg\bin"
 
 from fastapi import FastAPI, UploadFile, File, Request
@@ -74,69 +75,18 @@ Base.metadata.create_all(bind=engine)
 
 
 # -----------------------------
-# Load Vosk Model
+# Load Models
 # -----------------------------
 VOSK_MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "models", "vosk-small")
-if not os.path.exists(VOSK_MODEL_PATH):
-    raise RuntimeError(f"Vosk model not found at {VOSK_MODEL_PATH}")
-
-print(f"[INFO] Using Vosk model at: {VOSK_MODEL_PATH}")
-vosk_model = Model(VOSK_MODEL_PATH)
+if os.path.exists(VOSK_MODEL_PATH):
+    print(f"[INFO] Using Vosk model at: {VOSK_MODEL_PATH}")
+    vosk_model = Model(VOSK_MODEL_PATH)
+else:
+    print(f"[WARN] Vosk model not found at {VOSK_MODEL_PATH}")
 
 print("[INFO] Loading Whisper model...")
 whisper_model = whisper.load_model("tiny")
 print("[INFO] Whisper model loaded")
-
-# -----------------------------
-# /transcribe — Voice → Text
-# -----------------------------
-@app.post("/transcribe")
-async def transcribe(audio_file: UploadFile = File(...)):
-    data, samplerate = sf.read(audio_file.file)
-
-    # convert stereo → mono
-    if len(data.shape) > 1:
-        data = data.mean(axis=1)
-
-    # convert to 16-bit PCM
-    data = (data * 32767).astype(np.int16)
-
-    rec = KaldiRecognizer(vosk_model, samplerate)
-    rec.AcceptWaveform(data.tobytes())
-    result = rec.FinalResult()
-    text = json.loads(result).get("text", "")
-
-    return {"success": True, "transcription": text}
-
-
-# -----------------------------
-# /voice/transcribe — Whisper AI
-# -----------------------------
-@app.post("/voice/transcribe")
-async def transcribe_whisper(audio_file: UploadFile = File(...)):
-    temp_filename = f"temp_{audio_file.filename}"
-
-    # Save uploaded file
-    with open(temp_filename, "wb") as buffer:
-        shutil.copyfileobj(audio_file.file, buffer)
-
-    try:
-        result = whisper_model.transcribe(temp_filename)
-
-        return {
-            "success": True,
-            "text": result["text"]
-        }
-
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
-
-    finally:
-        if os.path.exists(temp_filename):
-            os.remove(temp_filename)
 
 
 # -----------------------------
@@ -160,42 +110,6 @@ async def analyze(request: dict):
         "all_probabilities": emotion_result.get("all_probabilities", {})
     }
 
-
-# -----------------------------
-# /voice/full-analysis — Voice → Emotion
-# -----------------------------
-@app.post("/voice/full-analysis")
-async def full_analysis(audio_file: UploadFile = File(...)):
-    temp_filename = f"temp_{audio_file.filename}"
-
-    with open(temp_filename, "wb") as buffer:
-        shutil.copyfileobj(audio_file.file, buffer)
-
-    try:
-        # Step 1: Transcribe
-        result = whisper_model.transcribe(temp_filename)
-        text = result.get("text", "")
-
-        if not text.strip():
-            return {
-                "success": False,
-                "message": "No speech detected"
-            }
-
-        # Step 2: Emotion
-        emotion_result = emotion_classifier.predict_emotion(text)
-
-        return {
-            "success": True,
-            "text": text,
-            "emotion": emotion_result["primary_emotion"],
-            "confidence": emotion_result["confidence"],
-            "alternatives": emotion_result["alternative_emotions"]
-        }
-
-    finally:
-        if os.path.exists(temp_filename):
-            os.remove(temp_filename)
 
 # -----------------------------
 # Include Routes

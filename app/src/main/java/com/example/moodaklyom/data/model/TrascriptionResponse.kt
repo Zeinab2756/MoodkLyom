@@ -1,11 +1,4 @@
 package com.moodaklyom.data.model
 
-data class Emotion(
-    val primary_emotion: String?,
-    val confidence: Float?
-)
-
-data class TranscriptionResponse(
-    val success: Boolean,
-    val text: String?
-)
+// This file is empty to avoid redeclaration with TranscriptionResponse.kt
+// Please delete this file if possible.
