@@ -31,22 +31,22 @@ private val LightColorScheme = lightColorScheme(
     primary = MintPrimary,
     secondary = MintSecondary,
     tertiary = MintLight,
-    background = WhiteBackground,
+    background = MintBackground, // Use the new very light green background
     surface = White,
     onPrimary = Color(0xFFFFFFFF),
     onSecondary = Color(0xFFFFFFFF),
     onBackground = MintDark,
     onSurface = MintDark,
-    primaryContainer = Color(0xFFE8F5E9), // Light green container
+    primaryContainer = Color(0xFFE8F5E9), 
     onPrimaryContainer = MintDark,
-    surfaceVariant = Color(0xFFE8F5E9), // Light green for cards, fixed from purple
+    surfaceVariant = Color(0xFFE8F5E9),
     onSurfaceVariant = MintDark
 )
 
 @Composable
 fun MoodakLyomTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false, // Set to false to force our mint theme
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

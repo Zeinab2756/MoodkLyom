@@ -23,7 +23,7 @@ import com.moodaklyom.data.local.TokenManager
 import com.moodaklyom.navigation.Screen
 import com.moodaklyom.ui.components.BottomNavBar
 import com.moodaklyom.ui.components.CustomTopAppBar
-import com.moodaklyom.ui.theme.PurplePrimary
+import com.moodaklyom.ui.theme.MintPrimary
 
 @Composable
 fun MoodsScreen(navController: NavController) {
@@ -38,18 +38,21 @@ fun MoodsScreen(navController: NavController) {
     val uiState by viewModel.uiState.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        CustomTopAppBar(title = "My Moods")
+        CustomTopAppBar(
+            title = "My Moods",
+            onProfileClick = { navController.navigate(Screen.Profile.route) }
+        )
 
         Scaffold(
             bottomBar = { BottomNavBar(navController) },
             floatingActionButton = {
-                FloatingActionButton(
+                ExtendedFloatingActionButton(
                     onClick = { navController.navigate(Screen.AddMood.route) },
-                    containerColor = PurplePrimary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Mood")
-                }
+                    containerColor = MintPrimary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text("Add Mood") }
+                )
             }
         ) { padding ->
             when {

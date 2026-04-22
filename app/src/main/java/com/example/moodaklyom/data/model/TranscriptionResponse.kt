@@ -3,17 +3,17 @@ package com.moodaklyom.data.model
 data class TranscriptionResponse(
     val success: Boolean,
     val transcribed_text: String?,
-    val emotion: EmotionResult?,
-    val pcm_path: String?
+    val emotion: EmotionData? = null,
+    val message: String? = null
 )
 
-data class EmotionResult(
-    val primary_emotion: String?,
-    val confidence: Float?,
-    val alternative_emotions: List<AlternativeEmotion>?
+data class EmotionData(
+    val primary_emotion: String,
+    val confidence: Double,
+    val alternative_emotions: List<EmotionAlternative>? = null
 )
 
-data class AlternativeEmotion(
-    val label: String,
-    val score: Float
+data class EmotionAlternative(
+    val emotion: String,
+    val probability: Double
 )

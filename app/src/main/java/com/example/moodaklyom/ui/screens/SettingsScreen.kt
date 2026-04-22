@@ -42,7 +42,12 @@ fun SettingsScreen(
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
-        topBar = { CustomTopAppBar("Settings") },
+        topBar = { 
+            CustomTopAppBar(
+                title = "Settings",
+                onBackClick = { navController.popBackStack() }
+            ) 
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Column(

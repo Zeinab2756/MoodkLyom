@@ -14,10 +14,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -25,6 +27,7 @@ import androidx.navigation.NavController
 import com.moodaklyom.HacksViewModel
 import com.moodaklyom.data.local.TokenManager
 import com.moodaklyom.data.model.WellnessTip
+import com.moodaklyom.navigation.Screen
 import com.moodaklyom.ui.components.BottomNavBar
 import com.moodaklyom.ui.components.CustomTopAppBar
 import com.moodaklyom.ui.theme.MintPrimary
@@ -42,7 +45,10 @@ fun HacksScreen(navController: NavController) {
     val uiState by viewModel.uiState.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        CustomTopAppBar(title = "Tips & Hacks")
+        CustomTopAppBar(
+            title = "Tips & Hacks",
+            onProfileClick = { navController.navigate(Screen.Profile.route) }
+        )
 
         Scaffold(
             bottomBar = { BottomNavBar(navController) }
@@ -96,7 +102,7 @@ fun HacksScreen(navController: NavController) {
                         item {
                             Text(
                                 text = "Wellness tips and tricks",
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onBackground,
                                 modifier = Modifier.padding(bottom = 8.dp)
@@ -145,67 +151,82 @@ fun HackCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
                 Text(
                     text = hack.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
                 )
                 Icon(
                     imageVector = Icons.Default.Lightbulb,
                     contentDescription = null,
-                    tint = MintPrimary,
-                    modifier = Modifier.size(24.dp)
+                    tint = Color(0xFFFFD700),
+                    modifier = Modifier.size(36.dp).padding(start = 8.dp) // Increased size from 28.dp to 36.dp
                 )
             }
 
             Text(
                 text = hack.description,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = 22.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 4,
+                maxLines = 6,
                 overflow = TextOverflow.Ellipsis
             )
 
-            hack.category?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MintPrimary,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-
-            hack.tags?.takeIf { it.isNotEmpty() }?.let { tags ->
-                Text(
-                    text = tags.joinToString(" | "),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-
-            OutlinedButton(
-                onClick = onAddToTasks,
-                enabled = !isAdding,
-                modifier = Modifier.align(Alignment.End)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (isAdding) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .size(16.dp)
-                            .padding(end = 8.dp),
-                        strokeWidth = 2.dp
+                Column(modifier = Modifier.weight(1f)) {
+                    hack.category?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp),
+                            color = MintPrimary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    hack.tags?.takeIf { it.isNotEmpty() }?.let { tags ->
+                        Text(
+                            text = tags.joinToString(" | "),
+                            style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
+
+                OutlinedButton(
+                    onClick = onAddToTasks,
+                    enabled = !isAdding,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.height(42.dp)
+                ) {
+                    if (isAdding) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(18.dp)
+                                .padding(end = 8.dp),
+                            strokeWidth = 2.dp,
+                            color = MintPrimary
+                        )
+                    }
+                    Text(
+                        text = if (isAdding) "Adding..." else "Add to Tasks",
+                        style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp),
+                        fontWeight = FontWeight.Bold
                     )
                 }
-                Text(if (isAdding) "Adding..." else "Add to Tasks")
             }
         }
     }

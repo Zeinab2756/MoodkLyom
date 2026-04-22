@@ -2,14 +2,15 @@ package com.moodaklyom.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Mint Green Theme Colors (Updated to be darker and more visible)
-val MintPrimary = Color(0xFF4ED77B)       // More vibrant, darker mint green
-val MintSecondary = Color(0xFF38B469)     // Darker version for secondary elements
-val MintLight = Color(0xFFAFF8C8)         // The old primary color, now used for light accents
-val MintDark = Color(0xFF1B5E20)          // Deep forest green for high contrast
+// Mint Green Theme Colors
+val MintPrimary = Color(0xFF4ED77B)       // Vibrant brand green
+val MintSecondary = Color(0xFF38B469)     // Darker green for contrast
+val MintLight = Color(0xFFAFF8C8)         // Light green for accents
+val MintDark = Color(0xFF1B5E20)          // Deep forest green for text/contrast
+val MintBackground = Color(0xFFF7FFF9)    // Option C: Very light green tint for the entire app
 
 val White = Color(0xFFFFFFFF)
-val WhiteBackground = Color(0xFFF0FAF4)   // Slightly more tinted background
+val WhiteBackground = Color(0xFFF0FAF4)   // Legacy tint
 val LightGray = Color(0xFFF3F4F6)
 val MediumGray = Color(0xFFE5E7EB)
 val DarkGray = Color(0xFF6B7280)

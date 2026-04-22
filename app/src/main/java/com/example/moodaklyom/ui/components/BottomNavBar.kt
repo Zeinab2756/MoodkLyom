@@ -21,8 +21,7 @@ fun BottomNavBar(navController: NavController) {
         BottomNavItem("Home", Icons.Default.Home, Screen.Home.route),
         BottomNavItem("Moods", Icons.Default.Favorite, Screen.Moods.route),
         BottomNavItem("Tasks", Icons.Default.CheckCircle, Screen.Tasks.route),
-        BottomNavItem("Hacks", Icons.Default.Lightbulb, Screen.Hacks.route),
-        BottomNavItem("Profile", Icons.Default.Person, Screen.Profile.route)
+        BottomNavItem("Hacks", Icons.Default.Lightbulb, Screen.Hacks.route)
     )
 
     val navBackStackEntry = navController.currentBackStackEntryAsState()
@@ -48,11 +47,11 @@ fun BottomNavBar(navController: NavController) {
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.primary, // This is MintPrimary
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
                     selectedTextColor = MaterialTheme.colorScheme.primary,
-                    indicatorColor = MaterialTheme.colorScheme.primaryContainer, // This is light green
-                    unselectedIconColor = MaterialTheme.colorScheme.primary, // Force unselected to be same as selected
-                    unselectedTextColor = MaterialTheme.colorScheme.primary  // Force unselected to be same as selected
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.primary,
+                    unselectedTextColor = MaterialTheme.colorScheme.primary
                 )
             )
         }

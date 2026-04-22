@@ -25,7 +25,7 @@ import com.moodaklyom.data.local.TokenManager
 import com.moodaklyom.navigation.Screen
 import com.moodaklyom.ui.components.BottomNavBar
 import com.moodaklyom.ui.components.CustomTopAppBar
-import com.moodaklyom.ui.theme.PurplePrimary
+import com.moodaklyom.ui.theme.MintPrimary
 
 @Composable
 fun ProfileScreen(
@@ -36,7 +36,10 @@ fun ProfileScreen(
     val username by tokenManager.username.collectAsState(initial = "User")
 
     Column(modifier = Modifier.fillMaxSize()) {
-        CustomTopAppBar(title = "Profile")
+        CustomTopAppBar(
+            title = "Profile",
+            onBackClick = { navController.popBackStack() }
+        )
 
         Scaffold(
             bottomBar = { BottomNavBar(navController) }
@@ -50,18 +53,16 @@ fun ProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
 
-                // Profile header card (Brand purple)
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = PurplePrimary
-                    )
+                // Profile info box (Now just a Box, not a clickable Card)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(32.dp))
+                        .background(MintPrimary)
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
@@ -127,7 +128,6 @@ fun ProfileScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileMenuItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -150,7 +150,7 @@ fun ProfileMenuItem(
             Icon(
                 imageVector = icon,
                 contentDescription = title,
-                tint = PurplePrimary,
+                tint = MintPrimary,
                 modifier = Modifier.size(24.dp)
             )
 

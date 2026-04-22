@@ -27,7 +27,7 @@ import com.moodaklyom.data.model.TaskResponse
 import com.moodaklyom.navigation.Screen
 import com.moodaklyom.ui.components.BottomNavBar
 import com.moodaklyom.ui.components.CustomTopAppBar
-import com.moodaklyom.ui.theme.PurplePrimary
+import com.moodaklyom.ui.theme.MintPrimary
 
 @Composable
 fun TasksScreen(navController: NavController) {
@@ -46,18 +46,21 @@ fun TasksScreen(navController: NavController) {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        CustomTopAppBar(title = "My Tasks")
+        CustomTopAppBar(
+            title = "My Tasks",
+            onProfileClick = { navController.navigate(Screen.Profile.route) }
+        )
 
         Scaffold(
             bottomBar = { BottomNavBar(navController) },
             floatingActionButton = {
-                FloatingActionButton(
+                ExtendedFloatingActionButton(
                     onClick = { navController.navigate(Screen.AddTask.route) },
-                    containerColor = PurplePrimary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Task")
-                }
+                    containerColor = MintPrimary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text("Add Task") }
+                )
             }
         ) { padding ->
             when {
@@ -165,7 +168,7 @@ fun TaskCard(
                 Icon(
                     if (task.is_completed) Icons.Default.CheckCircle else Icons.Default.Circle,
                     contentDescription = if (task.is_completed) "Completed" else "Not completed",
-                    tint = if (task.is_completed) PurplePrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = if (task.is_completed) MintPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -194,7 +197,7 @@ fun TaskCard(
                 Text(
                     text = task.priority,
                     style = MaterialTheme.typography.labelSmall,
-                    color = PurplePrimary,
+                    color = MintPrimary,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
