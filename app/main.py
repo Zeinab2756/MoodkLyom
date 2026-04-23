@@ -48,15 +48,17 @@ Base.metadata.create_all(bind=engine)
 with SessionLocal() as db:
     ensure_default_hacks(db)
 
-from app.routes import hack as hack_routes
-from app.routes import emotion_routes
-from app.routes import mood as mood_routes
-from app.routes import mood_routes as mood_analysis_routes
-from app.routes import profile as profile_routes
-from app.routes import resources as resource_routes
-from app.routes import task as task_routes
-from app.routes import user as user_routes
-from app.routes import voice as voice_routes
+from app.routes import (  # noqa: E402 - routers are loaded after startup-side DB initialization above
+    emotion_routes,
+    hack as hack_routes,
+    mood as mood_routes,
+    mood_routes as mood_analysis_routes,
+    profile as profile_routes,
+    resources as resource_routes,
+    task as task_routes,
+    user as user_routes,
+    voice as voice_routes,
+)
 
 app.include_router(user_routes.router, prefix="/user", tags=["User"])
 app.include_router(emotion_routes.router)

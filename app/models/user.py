@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, DateTime, JSON, Text
-from sqlalchemy.dialects.sqlite import BLOB
-from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 from app.database import Base
 import uuid
 
