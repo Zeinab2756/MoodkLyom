@@ -128,6 +128,33 @@ def _transcribe_with_local_whisper(audio_path: Path, language: str | None) -> st
     return (result.get("text") or "").strip() or None
 
 
+@lru_cache(maxsize=1)
+def _load_faster_whisper_model():
+    if importlib.util.find_spec("faster_whisper") is None:
+        return None
+
+    from faster_whisper import WhisperModel
+
+    model_name = os.getenv("FASTER_WHISPER_MODEL", os.getenv("WHISPER_MODEL", "tiny"))
+    device = "cuda" if os.getenv("FASTER_WHISPER_DEVICE", "").lower() == "cuda" else "cpu"
+    if device == "cpu":
+        compute_type = os.getenv("FASTER_WHISPER_COMPUTE_TYPE", "int8")
+    else:
+        compute_type = os.getenv("FASTER_WHISPER_COMPUTE_TYPE", "float16")
+
+    return WhisperModel(model_name, device=device, compute_type=compute_type)
+
+
+def _transcribe_with_faster_whisper(audio_path: Path, language: str | None) -> str | None:
+    model = _load_faster_whisper_model()
+    if model is None:
+        return None
+
+    segments, _info = model.transcribe(str(audio_path), language=language or None)
+    text = " ".join(segment.text.strip() for segment in segments if segment.text.strip()).strip()
+    return text or None
+
+
 def transcribe_audio_file(audio_path: str | Path, language: str | None = None) -> tuple[bool, str | None, str | None]:
     path = Path(audio_path)
     if not path.exists():
@@ -136,6 +163,7 @@ def transcribe_audio_file(audio_path: str | Path, language: str | None = None) -
     for provider in (
         _transcribe_with_openai,
         _transcribe_with_azure_openai,
+        _transcribe_with_faster_whisper,
         _transcribe_with_local_whisper,
     ):
         text = provider(path, language)
