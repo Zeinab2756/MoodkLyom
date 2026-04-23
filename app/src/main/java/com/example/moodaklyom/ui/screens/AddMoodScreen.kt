@@ -331,19 +331,24 @@ fun AddMoodScreen(navController: NavController) {
                 }
             }
 
-            // Notes
+            // Enhanced Notes Input
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
                 label = { Text("Notes (optional)") },
+                placeholder = { Text("How was your day? Write or record your thoughts...") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp),
+                    .height(150.dp),
                 maxLines = 5,
                 enabled = !isTranscribing,
+                shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MintPrimary,
-                    focusedLabelColor = MintPrimary
+                    focusedLabelColor = MintPrimary,
+                    cursorColor = MintPrimary,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
 

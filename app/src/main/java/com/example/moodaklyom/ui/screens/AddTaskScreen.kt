@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.moodaklyom.data.api.RetrofitClient
 import com.moodaklyom.data.local.TokenManager
@@ -43,50 +44,91 @@ fun AddTaskScreen(navController: NavController) {
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            // Styled Title Input
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text("Task Title") },
+                placeholder = { Text("What needs to be done?") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MintPrimary,
+                    focusedLabelColor = MintPrimary,
+                    cursorColor = MintPrimary,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
 
+            // Styled Description Input
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
                 label = { Text("Description (optional)") },
+                placeholder = { Text("Add more details...") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp),
-                maxLines = 5
+                    .height(150.dp),
+                maxLines = 5,
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MintPrimary,
+                    focusedLabelColor = MintPrimary,
+                    cursorColor = MintPrimary,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
 
             Text(
                 "Priority",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MintPrimary
             )
 
-            Row(
+            // Priority Grid: 2 by 2
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                priorities.forEach { priority ->
-                    val isSelected = selectedPriority == priority
-                    Button(
-                        onClick = { selectedPriority = priority },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isSelected) MintPrimary else MaterialTheme.colorScheme.surface,
-                            contentColor = if (isSelected) White else MaterialTheme.colorScheme.onSurface
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            priority,
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
+                // First Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    PriorityButton(
+                        text = "LOW",
+                        isSelected = selectedPriority == "LOW",
+                        onClick = { selectedPriority = "LOW" },
+                        modifier = Modifier.weight(1f)
+                    )
+                    PriorityButton(
+                        text = "MEDIUM",
+                        isSelected = selectedPriority == "MEDIUM",
+                        onClick = { selectedPriority = "MEDIUM" },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                // Second Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    PriorityButton(
+                        text = "HIGH",
+                        isSelected = selectedPriority == "HIGH",
+                        onClick = { selectedPriority = "HIGH" },
+                        modifier = Modifier.weight(1f)
+                    )
+                    PriorityButton(
+                        text = "URGENT",
+                        isSelected = selectedPriority == "URGENT",
+                        onClick = { selectedPriority = "URGENT" },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
 
@@ -139,18 +181,52 @@ fun AddTaskScreen(navController: NavController) {
                     containerColor = MintPrimary,
                     contentColor = White
                 ),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
             ) {
                 if (isSaving) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(24.dp),
                         color = White,
-                        strokeWidth = 2.dp
+                        strokeWidth = 3.dp
                     )
                 } else {
-                    Text("Save Task", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Save Task", 
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+fun PriorityButton(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(52.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isSelected) MintPrimary else MaterialTheme.colorScheme.surface,
+            contentColor = if (isSelected) White else MaterialTheme.colorScheme.onSurface
+        ),
+        shape = RoundedCornerShape(16.dp),
+        border = if (!isSelected) {
+            androidx.compose.foundation.BorderStroke(1.dp, MintPrimary.copy(alpha = 0.3f))
+        } else null,
+        elevation = if (isSelected) ButtonDefaults.buttonElevation(defaultElevation = 4.dp) else null,
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge.copy(fontSize = 15.sp),
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
+        )
     }
 }
