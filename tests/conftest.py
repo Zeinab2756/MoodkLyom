@@ -25,3 +25,18 @@ def client():
     engine.dispose()
     if TEST_DB_PATH.exists():
         TEST_DB_PATH.unlink()
+
+
+@pytest.fixture
+def auth_token(client: TestClient) -> str:
+    import uuid
+
+    response = client.post(
+        "/user/init",
+        json={
+            "username": f"tester_{uuid.uuid4().hex[:8]}",
+            "password": "secret123",
+        },
+    )
+    assert response.status_code == 200
+    return response.json()["data"]["token"]
