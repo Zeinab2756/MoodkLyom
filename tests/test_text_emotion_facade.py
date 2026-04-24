@@ -122,3 +122,31 @@ def test_sync_wrapper_runs_outside_event_loop(monkeypatch):
 
     assert result.label == "joy"
     assert result.source == "bert"
+
+
+def test_diagnostics_capture_fallback_reasons(monkeypatch):
+    def raise_from_bert(_text):
+        raise RuntimeError("bert unavailable")
+
+    async def raise_from_external(_text):
+        raise RuntimeError("external unavailable")
+
+    monkeypatch.setattr(text_emotion.emotion_classifier, "predict_emotion", raise_from_bert)
+    monkeypatch.setattr(text_emotion, "predict_external_emotion", raise_from_external)
+    monkeypatch.setattr(
+        text_emotion,
+        "predict_keyword_emotion",
+        lambda text: {
+            "emotion": "neutral",
+            "confidence": 0.8,
+            "distribution": {"neutral": 0.8, "sad": 0.2},
+        },
+    )
+
+    result, diagnostics = asyncio.run(text_emotion.predict_text_emotion_with_diagnostics("fallback case"))
+
+    assert result.source == "keyword"
+    assert diagnostics.selected_source == "keyword"
+    assert diagnostics.bert.reason == "bert unavailable"
+    assert diagnostics.external.reason == "external unavailable"
+    assert diagnostics.keyword.success is True

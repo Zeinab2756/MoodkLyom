@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import os
 import sys
@@ -31,7 +32,7 @@ from app.models.emotion_model import emotion_classifier  # noqa: E402
 from app.schemas.emotion_schemas import EmotionDistribution  # noqa: E402
 from app.services.acoustic_emotion import acoustic_emotion_predictor  # noqa: E402
 from app.services.fusion import fuse  # noqa: E402
-from app.services.text_emotion import predict_text_emotion  # noqa: E402
+from app.services.text_emotion import predict_text_emotion_with_diagnostics  # noqa: E402
 from app.services.transcription import (  # noqa: E402
     _load_faster_whisper_model,
     _load_local_whisper_model,
@@ -96,19 +97,19 @@ def _top_items(distribution: dict[str, float], label_map: dict[str, str]) -> lis
 
 def _inspect_audio(audio_path: Path) -> dict[str, object]:
     info = soundfile.info(str(audio_path))
-    acoustic_emotion_predictor._ensure_loaded()
-    processed = acoustic_emotion_predictor._load_audio(audio_path)
     processed_sample_rate = acoustic_emotion_predictor.target_sample_rate
     processed_channels = 1
+    duration_seconds = float(info.frames / info.samplerate) if info.samplerate else 0.0
+    processed_frames = int(round(duration_seconds * processed_sample_rate))
 
     return {
-        "duration_seconds": float(info.frames / info.samplerate) if info.samplerate else 0.0,
+        "duration_seconds": duration_seconds,
         "sample_rate_hz": int(info.samplerate),
         "processed_sample_rate_hz": int(processed_sample_rate),
         "channels": int(info.channels),
         "processed_channels": processed_channels,
         "frames": int(info.frames),
-        "processed_frames": int(len(processed)),
+        "processed_frames": processed_frames,
         "resampled": int(info.samplerate) != int(processed_sample_rate),
         "downmixed": int(info.channels) != processed_channels,
     }
@@ -190,37 +191,27 @@ def _transcribe(audio_path: Path, language: str | None) -> dict[str, object]:
 
 def _diagnose_text_emotion(text: str) -> dict[str, object]:
     started = time.perf_counter()
-    try:
-        raw_result = emotion_classifier.predict_emotion(text)
-    except Exception:
-        raw_result = {}
-
-    distribution = raw_result.get("distribution") if isinstance(raw_result, dict) else {}
-    if isinstance(distribution, dict) and distribution:
-        normalized_distribution = _normalized_distribution(
-            {str(label).strip().lower(): float(probability) for label, probability in distribution.items()}
-        )
-        emotion = predict_text_emotion(text)
-        return {
-            "backend": "BERT classifier",
-            "source": emotion.source,
-            "emotion": emotion,
-            "native_distribution": normalized_distribution,
-            "top3": _top_items(normalized_distribution, TEXT_EMOTION_LABEL_MAP),
-            "elapsed_ms": int((time.perf_counter() - started) * 1000),
-        }
-
-    emotion = predict_text_emotion(text)
+    emotion, diagnostics = asyncio.run(predict_text_emotion_with_diagnostics(text))
+    status = emotion_classifier.get_status()
+    native_distribution = diagnostics.bert.distribution if diagnostics.selected_source == "bert" else emotion.distribution
     return {
         "backend": {
             "external": "external emotion API",
             "keyword": "keyword fallback",
+            "bert": "BERT classifier",
             "empty": "empty input",
         }.get(emotion.source, emotion.source),
         "source": emotion.source,
         "emotion": emotion,
-        "native_distribution": emotion.distribution,
-        "top3": _top_items(emotion.distribution, TEXT_EMOTION_LABEL_MAP),
+        "native_distribution": native_distribution,
+        "top3": _top_items(native_distribution, TEXT_EMOTION_LABEL_MAP),
+        "diagnostics": {
+            "selected_source": diagnostics.selected_source,
+            "bert": diagnostics.bert.__dict__,
+            "external": diagnostics.external.__dict__,
+            "keyword": diagnostics.keyword.__dict__,
+            "model_status": status.__dict__,
+        },
         "elapsed_ms": int((time.perf_counter() - started) * 1000),
     }
 
@@ -312,16 +303,34 @@ def _render_console(result: dict[str, object]) -> str:
 
     text = result.get("text_emotion")
     if text:
+        diagnostics = text.get("diagnostics", {})
+        model_status = diagnostics.get("model_status", {})
+        bert_attempt = diagnostics.get("bert", {})
         lines.extend(
             [
                 _section("TEXT EMOTION (BERT FACADE)"),
                 f"  Primary backend: {text['backend']}",
+                f"  BERT attempted: {('yes' if bert_attempt.get('attempted') else 'no')}",
+                f"  BERT load:      {('success' if model_status.get('loaded') else 'failure')}",
+                (
+                    f"  BERT source:    {model_status.get('source_kind')} -> {model_status.get('source')}"
+                    if model_status.get("source")
+                    else "  BERT source:    unavailable"
+                ),
                 "  Top 3:",
                 *_format_top3(text["top3"]),
                 f"  Took:         {text['elapsed_ms']} ms",
                 "",
             ]
         )
+        if model_status.get("local_model_issue"):
+            lines.append(f"  Local model:    {model_status['local_model_issue']}")
+        if bert_attempt.get("reason"):
+            lines.append(f"  BERT fallback:  {bert_attempt['reason']}")
+        external_attempt = diagnostics.get("external", {})
+        if external_attempt.get("reason"):
+            lines.append(f"  External miss:  {external_attempt['reason']}")
+        lines.append("")
 
     acoustic = result.get("acoustic_emotion")
     if acoustic:

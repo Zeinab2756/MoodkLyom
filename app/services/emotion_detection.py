@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuration for emotion detection API
-EMOTION_API_URL = os.getenv("EMOTION_API_URL", "http://0.0.0.0:8000/emotion/emotion/analyze")
+EMOTION_API_URL = os.getenv("EMOTION_API_URL", "").strip()
 EMOTION_API_TIMEOUT = int(os.getenv("EMOTION_API_TIMEOUT", "30"))
 
 
@@ -29,11 +29,10 @@ async def predict_external_emotion(text: str) -> Dict[str, Any]:
     Raises:
         Exception: If the API call fails or no external backend is configured.
     """
+    if not EMOTION_API_URL:
+        raise NotImplementedError("EMOTION_API_URL is not configured")
     if not EMOTION_API_URL.startswith("http"):
-        raise NotImplementedError(
-            "Local model loading not yet implemented. "
-            "Please set EMOTION_API_URL to an HTTP endpoint or implement local model loading."
-        )
+        raise NotImplementedError("EMOTION_API_URL must be an HTTP endpoint")
 
     payload = json.dumps({"text": text}).encode("utf-8")
     request = urllib.request.Request(

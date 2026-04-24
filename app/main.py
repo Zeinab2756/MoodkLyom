@@ -1,6 +1,7 @@
 import sys
 import time
 import traceback
+import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,6 +16,18 @@ app = FastAPI(
     description="Backend for MoodakLyom App",
     version="1.1.0",
 )
+
+
+def _cors_allowed_origins() -> list[str]:
+    raw_value = os.getenv(
+        "CORS_ALLOW_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000",
+    )
+    return [
+        origin.strip()
+        for origin in raw_value.split(",")
+        if origin.strip()
+    ] or ["http://localhost:3000"]
 
 
 @app.middleware("http")
@@ -38,7 +51,7 @@ async def log_requests(request: Request, call_next):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -74,3 +87,8 @@ app.include_router(voice_routes.router, prefix="/voice", tags=["Voice"])
 @app.get("/")
 def root():
     return {"message": "MoodakLyom backend is running successfully!", "status": "ok"}
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}

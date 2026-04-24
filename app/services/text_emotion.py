@@ -1,11 +1,34 @@
 from __future__ import annotations
 
 import asyncio
+import logging
+from dataclasses import dataclass, field
 from typing import Any
 
 from app.models.emotion_model import emotion_classifier
 from app.schemas.emotion_schemas import EmotionDistribution
 from app.services.emotion_detection import predict_external_emotion, predict_keyword_emotion
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class BackendAttempt:
+    attempted: bool = False
+    backend: str = ""
+    success: bool = False
+    reason: str | None = None
+    label: str | None = None
+    confidence: float | None = None
+    distribution: dict[str, float] = field(default_factory=dict)
+
+
+@dataclass
+class TextEmotionDiagnostics:
+    selected_source: str
+    bert: BackendAttempt = field(default_factory=lambda: BackendAttempt(backend="bert"))
+    external: BackendAttempt = field(default_factory=lambda: BackendAttempt(backend="external"))
+    keyword: BackendAttempt = field(default_factory=lambda: BackendAttempt(backend="keyword"))
 
 
 def _normalize_label(label: str | None) -> str | None:
@@ -85,25 +108,59 @@ def _to_emotion_distribution(result: dict[str, Any], source: str) -> EmotionDist
     )
 
 
-async def predict_text_emotion_async(text: str) -> EmotionDistribution:
+def _capture_attempt(attempt: BackendAttempt, emotion: EmotionDistribution) -> None:
+    attempt.success = True
+    attempt.label = emotion.label
+    attempt.confidence = emotion.confidence
+    attempt.distribution = emotion.distribution
+
+
+async def predict_text_emotion_with_diagnostics(text: str) -> tuple[EmotionDistribution, TextEmotionDiagnostics]:
     normalized_text = text.strip()
     if not normalized_text:
-        return EmotionDistribution(label="neutral", confidence=0.0, distribution={}, source="empty")
+        return (
+            EmotionDistribution(label="neutral", confidence=0.0, distribution={}, source="empty"),
+            TextEmotionDiagnostics(selected_source="empty"),
+        )
+
+    diagnostics = TextEmotionDiagnostics(selected_source="keyword")
+    diagnostics.bert.attempted = True
 
     try:
         bert_result = emotion_classifier.predict_emotion(normalized_text)
         emotion = _to_emotion_distribution(bert_result, source="bert")
+        _capture_attempt(diagnostics.bert, emotion)
         if emotion.confidence > 0:
-            return emotion
-    except Exception:
-        pass
+            diagnostics.selected_source = "bert"
+            return emotion, diagnostics
+        diagnostics.bert.reason = "BERT returned a non-positive confidence score"
+        logger.warning("Text emotion BERT fallback: %s", diagnostics.bert.reason)
+    except Exception as exc:
+        diagnostics.bert.reason = str(exc) or exc.__class__.__name__
+        logger.warning("Text emotion BERT fallback: %s", diagnostics.bert.reason)
 
+    diagnostics.external.attempted = True
     try:
         external_result = await predict_external_emotion(normalized_text)
-        return _to_emotion_distribution(external_result, source="external")
-    except Exception:
-        keyword_result = predict_keyword_emotion(normalized_text)
-        return _to_emotion_distribution(keyword_result, source="keyword")
+        emotion = _to_emotion_distribution(external_result, source="external")
+        _capture_attempt(diagnostics.external, emotion)
+        diagnostics.selected_source = "external"
+        return emotion, diagnostics
+    except Exception as exc:
+        diagnostics.external.reason = str(exc) or exc.__class__.__name__
+        logger.warning("Text emotion external fallback: %s", diagnostics.external.reason)
+
+    diagnostics.keyword.attempted = True
+    keyword_result = predict_keyword_emotion(normalized_text)
+    emotion = _to_emotion_distribution(keyword_result, source="keyword")
+    _capture_attempt(diagnostics.keyword, emotion)
+    diagnostics.selected_source = "keyword"
+    return emotion, diagnostics
+
+
+async def predict_text_emotion_async(text: str) -> EmotionDistribution:
+    emotion, _diagnostics = await predict_text_emotion_with_diagnostics(text)
+    return emotion
 
 
 def predict_text_emotion(text: str) -> EmotionDistribution:
