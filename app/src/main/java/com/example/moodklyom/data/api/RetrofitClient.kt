@@ -12,8 +12,8 @@ object RetrofitClient {
     // Change this to your backend URL
     // For Android Emulator: http://10.0.2.2:8000
     // For physical device: http://YOUR_COMPUTER_IP:8000
-    private const val BASE_URL = "http://10.0.2.2:8000/"
-    //private const val BASE_URL = "http://192.168.10.29:8000/"
+    //private const val BASE_URL = "http://10.0.2.2:8000/"
+    private const val BASE_URL = "http://192.168.10.29:8000/"
     //base url for phone emulator: http://192.168.10.29:8000/
 
     @Volatile
@@ -50,8 +50,8 @@ object RetrofitClient {
         .addInterceptor(authInterceptor)
         .addInterceptor(loggingInterceptor)
         .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(180, TimeUnit.SECONDS)
+        .writeTimeout(180, TimeUnit.SECONDS)
         .build()
 
     private val retrofit = Retrofit.Builder()

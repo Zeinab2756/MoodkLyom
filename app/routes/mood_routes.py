@@ -13,6 +13,7 @@ from app.routes.voice import _save_temp_audio_file
 from app.schemas.mood_analysis import MoodAnalyzeResponse
 from app.schemas.emotion_schemas import EmotionDistribution
 from app.services.acoustic_emotion import predict_acoustic_emotion
+from app.services.audio_preprocessing import AudioPreprocessingError, convert_to_analysis_wav
 from app.services.fusion import fuse
 from app.services.text_emotion import predict_text_emotion
 from app.services.transcription import transcribe_audio_file
@@ -80,13 +81,22 @@ async def analyze_mood(
         )
 
     temp_path = _save_temp_audio_file(audio_bytes, audio_file.filename)
+    analysis_audio_path: str | None = None
     try:
-        _inspect_audio_file(temp_path)
+        try:
+            analysis_audio_path = convert_to_analysis_wav(temp_path)
+        except AudioPreprocessingError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(exc),
+            ) from exc
+
+        _inspect_audio_file(analysis_audio_path)
         loop = asyncio.get_running_loop()
         try:
             transcribe_result = await loop.run_in_executor(
                 None,
-                partial(transcribe_audio_file, temp_path, language=language),
+                partial(transcribe_audio_file, analysis_audio_path, language=language),
             )
         except Exception as exc:
             transcribe_result = (False, None, _format_warning("Transcription failed", exc))
@@ -97,7 +107,7 @@ async def analyze_mood(
             degraded = True
 
         branch_tasks = [
-            loop.run_in_executor(None, partial(predict_acoustic_emotion, temp_path)),
+            loop.run_in_executor(None, partial(predict_acoustic_emotion, analysis_audio_path)),
         ]
         branch_names = ["acoustic"]
 
@@ -143,3 +153,5 @@ async def analyze_mood(
     finally:
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
+        if analysis_audio_path and os.path.exists(analysis_audio_path):
+            os.remove(analysis_audio_path)
