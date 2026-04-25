@@ -395,11 +395,13 @@ fun AddMoodScreen(navController: NavController) {
                                     notificationPermission.launchPermissionRequest()
                                 }
 
-                                val proposedTaskIds = createProposedTasksForMood(
+                                val personalTaskId = createPersonalTaskFromNotes(notes)
+                                val supportTaskIds = createProposedTasksForMood(
                                     mood = request.emotion ?: "neutral"
                                 )
-                                if (proposedTaskIds.isNotEmpty()) {
-                                    showProposedTasksNotification(context, proposedTaskIds)
+                                val createdTaskIds = listOfNotNull(personalTaskId) + supportTaskIds
+                                if (createdTaskIds.isNotEmpty()) {
+                                    showProposedTasksNotification(context, createdTaskIds)
                                 }
                                 navController.popBackStack()
                             } else {
@@ -517,6 +519,82 @@ private fun moodEmotionForLevel(level: Int): String {
         else -> "neutral"
     }
 }
+
+suspend fun createPersonalTaskFromNotes(notes: String): Int? {
+    val task = extractTaskFromNotes(notes) ?: return null
+    val response = RetrofitClient.apiService.createTask(task)
+    return if (response.isSuccessful && response.body()?.success == true) {
+        response.body()?.data?.id
+    } else {
+        null
+    }
+}
+
+private fun extractTaskFromNotes(notes: String): TaskCreate? {
+    val cleanedNotes = notes.trim()
+    if (cleanedNotes.isBlank()) {
+        return null
+    }
+
+    val lower = cleanedNotes.lowercase(Locale.getDefault())
+    val hasTaskIntent = listOf(
+        "i have",
+        "i need",
+        "i need to",
+        "i must",
+        "i should",
+        "i will",
+        "i have to",
+        "deadline",
+        "due"
+    ).any { it in lower }
+    val matchedKeyword = TASK_KEYWORD_TITLES.keys.firstOrNull { it in lower }
+
+    if (!hasTaskIntent || matchedKeyword == null) {
+        return null
+    }
+
+    val title = TASK_KEYWORD_TITLES[matchedKeyword] ?: return null
+    val priority = if (
+        matchedKeyword in HIGH_PRIORITY_TASK_KEYWORDS ||
+        "tomorrow" in lower ||
+        "deadline" in lower ||
+        "due" in lower
+    ) {
+        "HIGH"
+    } else {
+        "MEDIUM"
+    }
+
+    return TaskCreate(
+        title = title,
+        description = "Created from your mood note: ${cleanedNotes.take(220)}",
+        priority = priority
+    )
+}
+
+private val TASK_KEYWORD_TITLES = linkedMapOf(
+    "presentation" to "Prepare for presentation",
+    "exam" to "Study for exam",
+    "test" to "Study for test",
+    "quiz" to "Study for quiz",
+    "assignment" to "Finish assignment",
+    "homework" to "Finish homework",
+    "report" to "Finish report",
+    "project" to "Work on project",
+    "meeting" to "Prepare for meeting",
+    "deadline" to "Review upcoming deadline",
+    "due" to "Finish due task"
+)
+
+private val HIGH_PRIORITY_TASK_KEYWORDS = setOf(
+    "presentation",
+    "exam",
+    "test",
+    "quiz",
+    "deadline",
+    "due"
+)
 
 suspend fun createProposedTasksForMood(mood: String): List<Int> {
     val proposalsResponse = RetrofitClient.apiService.getProposedTasks(mood = mood, limit = 3)
