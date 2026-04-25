@@ -1,7 +1,12 @@
 package com.example.moodklyom.ui.screens
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Build
@@ -35,6 +40,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,11 +51,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
+import com.example.moodklyom.MainActivity
 import com.example.moodklyom.data.api.RetrofitClient
 import com.example.moodklyom.data.local.TokenManager
 import com.example.moodklyom.data.model.MoodAnalysisResponse
 import com.example.moodklyom.data.model.MoodCreate
+import com.example.moodklyom.data.model.TaskCreate
 import com.example.moodklyom.ui.components.CustomTopAppBar
 import com.example.moodklyom.ui.theme.MintPrimary
 import com.example.moodklyom.ui.theme.White
@@ -91,6 +102,16 @@ fun AddMoodScreen(navController: NavController) {
             Manifest.permission.READ_EXTERNAL_STORAGE
         }
     )
+    val notificationPermission = rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS)
+
+    LaunchedEffect(Unit) {
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            !notificationPermission.status.isGranted
+        ) {
+            notificationPermission.launchPermissionRequest()
+        }
+    }
 
     fun applyMoodAnalysis(response: MoodAnalysisResponse) {
         if (!response.transcript.isNullOrBlank()) {
@@ -367,6 +388,19 @@ fun AddMoodScreen(navController: NavController) {
 
                             val response = RetrofitClient.apiService.addMood(request)
                             if (response.isSuccessful && response.body() != null) {
+                                if (
+                                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                    !notificationPermission.status.isGranted
+                                ) {
+                                    notificationPermission.launchPermissionRequest()
+                                }
+
+                                val proposedTaskIds = createProposedTasksForMood(
+                                    mood = request.emotion ?: "neutral"
+                                )
+                                if (proposedTaskIds.isNotEmpty()) {
+                                    showProposedTasksNotification(context, proposedTaskIds)
+                                }
                                 navController.popBackStack()
                             } else {
                                 transcriptionError =
@@ -482,6 +516,75 @@ private fun moodEmotionForLevel(level: Int): String {
         10 -> "happy"
         else -> "neutral"
     }
+}
+
+suspend fun createProposedTasksForMood(mood: String): List<Int> {
+    val proposalsResponse = RetrofitClient.apiService.getProposedTasks(mood = mood, limit = 3)
+    if (!proposalsResponse.isSuccessful || proposalsResponse.body()?.success != true) {
+        return emptyList()
+    }
+
+    return proposalsResponse.body()!!
+        .data
+        .mapNotNull { proposed ->
+            val createResponse = RetrofitClient.apiService.createTask(
+                TaskCreate(
+                    title = proposed.title,
+                    description = proposed.description,
+                    priority = proposed.priority
+                )
+            )
+            if (createResponse.isSuccessful && createResponse.body()?.success == true) {
+                createResponse.body()?.data?.id
+            } else {
+                null
+            }
+        }
+}
+
+private fun showProposedTasksNotification(context: Context, taskIds: List<Int>) {
+    val channelId = "proposed_tasks"
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val channel = NotificationChannel(
+            channelId,
+            "Proposed Tasks",
+            NotificationManager.IMPORTANCE_DEFAULT
+        )
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(channel)
+    }
+
+    if (
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) != PackageManager.PERMISSION_GRANTED
+    ) {
+        return
+    }
+
+    val deepLink = Uri.parse("moodaklyom://tasks?proposedIds=${taskIds.joinToString(",")}")
+    val intent = Intent(Intent.ACTION_VIEW, deepLink, context, MainActivity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+    }
+    val pendingIntent = PendingIntent.getActivity(
+        context,
+        2001,
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
+    val notification = NotificationCompat.Builder(context, channelId)
+        .setSmallIcon(android.R.drawable.ic_dialog_info)
+        .setContentTitle("Your suggested tasks are ready")
+        .setContentText("Tap to see the tasks proposed from your mood.")
+        .setContentIntent(pendingIntent)
+        .setAutoCancel(true)
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .build()
+
+    NotificationManagerCompat.from(context).notify(2001, notification)
 }
 
 fun startRecording(context: Context, onStarted: (MediaRecorder, File) -> Unit) {

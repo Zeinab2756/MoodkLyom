@@ -32,7 +32,7 @@ fun BottomNavBar(navController: NavController) {
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         items.forEach { item ->
-            val selected = currentRoute == item.route
+            val selected = currentRoute == item.route || currentRoute?.startsWith("${item.route}?") == true
             NavigationBarItem(
                 icon = { Icon(item.icon, contentDescription = item.label) },
                 label = { Text(item.label) },

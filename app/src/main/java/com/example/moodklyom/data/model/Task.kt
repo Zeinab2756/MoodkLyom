@@ -35,6 +35,18 @@ data class TaskListResponse(
     val pending: Int
 )
 
+data class ProposedTaskResponse(
+    val title: String,
+    val description: String? = null,
+    val priority: String = "MEDIUM",
+    val source_mood: String? = null
+)
+
+data class ProposedTaskListResponse(
+    val success: Boolean,
+    val data: List<ProposedTaskResponse>
+)
+
 data class TaskSingleResponse(
     val success: Boolean,
     val data: TaskResponse

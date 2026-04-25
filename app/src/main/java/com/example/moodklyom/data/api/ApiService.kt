@@ -55,6 +55,12 @@ interface ApiService {
         @Query("offset") offset: Int = 0
     ): Response<TaskListResponse>
 
+    @GET("tasks/proposed")
+    suspend fun getProposedTasks(
+        @Query("mood") mood: String,
+        @Query("limit") limit: Int = 3
+    ): Response<ProposedTaskListResponse>
+
     @GET("tasks/{id}")
     suspend fun getTask(@Path("id") id: Int): Response<TaskSingleResponse>
 

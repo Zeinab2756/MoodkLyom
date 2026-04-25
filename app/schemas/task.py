@@ -23,6 +23,13 @@ class TaskCreate(TaskBase):
     pass
 
 
+class ProposedTask(BaseModel):
+    title: str = Field(..., min_length=1, max_length=500)
+    description: Optional[str] = Field(None, max_length=2000)
+    priority: Priority = Priority.MEDIUM
+    source_mood: str
+
+
 class TaskUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=500)
     description: Optional[str] = Field(None, max_length=2000)
@@ -52,6 +59,11 @@ class TaskListResponse(BaseModel):
 class TaskSingleResponse(BaseModel):
     success: bool = True
     data: TaskResponse
+
+
+class ProposedTaskListResponse(BaseModel):
+    success: bool = True
+    data: list[ProposedTask]
 
 
 class TaskStatsData(BaseModel):

@@ -1,7 +1,10 @@
 package com.example.moodklyom.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
 import androidx.navigation.NavHostController
+import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.moodklyom.ui.screens.*
@@ -43,8 +46,30 @@ fun NavGraph(
         composable(Screen.AddMood.route) {
             AddMoodScreen(navController = navController)
         }
-        composable(Screen.Tasks.route) {
-            TasksScreen(navController = navController)
+        composable(
+            route = "${Screen.Tasks.route}?proposedIds={proposedIds}",
+            arguments = listOf(
+                navArgument("proposedIds") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                }
+            ),
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "moodaklyom://tasks?proposedIds={proposedIds}"
+                }
+            )
+        ) { backStackEntry ->
+            val proposedIds = backStackEntry.arguments
+                ?.getString("proposedIds")
+                .orEmpty()
+                .split(",")
+                .mapNotNull { it.toIntOrNull() }
+                .toSet()
+            TasksScreen(
+                navController = navController,
+                proposedTaskIds = proposedIds
+            )
         }
         composable(Screen.AddTask.route) {
             AddTaskScreen(navController = navController)

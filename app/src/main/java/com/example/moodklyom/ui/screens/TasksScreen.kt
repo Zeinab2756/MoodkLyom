@@ -30,7 +30,10 @@ import com.example.moodklyom.ui.components.CustomTopAppBar
 import com.example.moodklyom.ui.theme.MintPrimary
 
 @Composable
-fun TasksScreen(navController: NavController) {
+fun TasksScreen(
+    navController: NavController,
+    proposedTaskIds: Set<Int> = emptySet()
+) {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
     val viewModel: TasksViewModel = viewModel(factory = object : ViewModelProvider.Factory {
@@ -40,6 +43,13 @@ fun TasksScreen(navController: NavController) {
         }
     })
     val uiState by viewModel.uiState.collectAsState()
+    val visibleTasks = remember(uiState.tasks, proposedTaskIds) {
+        if (proposedTaskIds.isEmpty()) {
+            uiState.tasks
+        } else {
+            uiState.tasks.filter { it.id in proposedTaskIds }
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.refresh()
@@ -111,7 +121,11 @@ fun TasksScreen(navController: NavController) {
                     ) {
                         item {
                             Text(
-                                text = "Your tasks",
+                                text = if (proposedTaskIds.isEmpty()) {
+                                    "Your tasks"
+                                } else {
+                                    "Suggested tasks for your mood"
+                                },
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onBackground,
@@ -119,16 +133,20 @@ fun TasksScreen(navController: NavController) {
                             )
                         }
 
-                        if (uiState.tasks.isEmpty()) {
+                        if (visibleTasks.isEmpty()) {
                             item {
                                 Text(
-                                    text = "No tasks yet. Add one or convert a hack into a task.",
+                                    text = if (proposedTaskIds.isEmpty()) {
+                                        "No tasks yet. Add one or convert a hack into a task."
+                                    } else {
+                                        "No suggested tasks found yet. Pull down the latest data and try again."
+                                    },
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         } else {
-                            items(uiState.tasks) { task ->
+                            items(visibleTasks) { task ->
                                 TaskCard(
                                     task = task,
                                     isToggling = uiState.togglingIds.contains(task.id),
